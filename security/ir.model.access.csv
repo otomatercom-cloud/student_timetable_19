@@ -5,3 +5,6 @@ access_otm_timetable_manager,otm.timetable.manager,model_otm_timetable,student_d
 access_otm_timetable_academic,otm.timetable.academic,model_otm_timetable,student_details_19.group_academic_coordinator,1,0,0,0
 access_faculty_details_sdm_manager,otm.faculty.details.sdm.manager,faculty_19.model_otm_faculty_details,student_details_19.group_student_manager,1,0,0,0
 access_faculty_details_sdm_academic,otm.faculty.details.sdm.academic,faculty_19.model_otm_faculty_details,student_details_19.group_academic_coordinator,1,0,0,0
+access_otm_classroom_course,otm.classroom.course,model_otm_classroom,student_details_19.group_course_coordinator,1,0,0,0
+access_otm_timetable_course,otm.timetable.course,model_otm_timetable,student_details_19.group_course_coordinator,1,0,0,0
+access_faculty_details_sdm_course,otm.faculty.details.sdm.course,faculty_19.model_otm_faculty_details,student_details_19.group_course_coordinator,1,0,0,0
