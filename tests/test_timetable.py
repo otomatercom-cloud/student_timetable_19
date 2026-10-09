@@ -60,3 +60,18 @@ class TestTimetable(TransactionCase):
         tue = date(2026, 10, 13)
         Att._auto_generate(tue)
         self.assertEqual(Att.search([('batch_id', '=', self.batch.id), ('date', '=', tue)]).slot_no, 0)
+
+    def test_coordinator_can_add_own_batch_only(self):
+        grp_a = self.env.ref('student_details_19.group_academic_coordinator')
+        grp_c = self.env.ref('student_details_19.group_course_coordinator')
+        ua = self.env['res.users'].create({'name': 'TA', 'login': 'tt_ac', 'group_ids': [(6, 0, [self.env.ref('base.group_user').id, grp_a.id])]})
+        uc = self.env['res.users'].create({'name': 'TC', 'login': 'tt_cc', 'group_ids': [(6, 0, [self.env.ref('base.group_user').id, grp_c.id])]})
+        self.batch.coordinator_ids = [(4, ua.id)]
+        course = self.env['course.master'].create({'name': 'TT Course', 'coordinator_ids': [(4, uc.id)]})
+        self.batch2.course_ids = [(4, course.id)]
+        vals = dict(subject_id=self.sub1.id, weekday='2', start_time=14.0, end_time=15.0)
+        self.T.with_user(ua).create(dict(vals, batch_id=self.batch.id))
+        self.T.with_user(uc).create(dict(vals, batch_id=self.batch2.id, start_time=15.0, end_time=16.0))
+        from odoo.exceptions import AccessError
+        with self.assertRaises(AccessError):
+            self.T.with_user(ua).create(dict(vals, batch_id=self.batch2.id, start_time=16.0, end_time=17.0))

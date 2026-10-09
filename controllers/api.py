@@ -1,16 +1,22 @@
-from odoo import _, http
+from odoo import _, fields, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
 from odoo.addons.student_details_19.controllers.api import (  # noqa: F401
-    _is_manager, _need_attendance, api)
+    _can_attendance, _is_manager, _need_attendance, api)
 
 from ..models.timetable import WEEKDAYS
 
 
 def _need_manager():
     if not _is_manager():
-        raise AccessError(_("Only administrators can change the timetable."))
+        raise AccessError(_("Only administrators can change this."))
+
+
+def _need_edit():
+    """Administrators, academic and course coordinators edit the timetable (record rules limit them to their batches)."""
+    if not _can_attendance():
+        raise AccessError(_("You cannot change the timetable."))
 
 
 class TimetableApi(http.Controller):
@@ -26,7 +32,7 @@ class TimetableApi(http.Controller):
             'classrooms': [{'id': c.id, 'name': c.name, 'capacity': c.capacity}
                            for c in env['otm.classroom'].search([])],
             'batches': [{'id': b.id, 'name': b.name} for b in env['student.batch'].search([])],
-            'can_edit': _is_manager(),
+            'can_edit': _can_attendance(), 'is_manager': _is_manager(),
         }
 
     @api('/timetable')
@@ -42,9 +48,32 @@ class TimetableApi(http.Controller):
         rows = request.env['otm.timetable'].search(domain)
         return [r._api_dict() for r in rows]
 
+    @api('/timetable/day')
+    def day(self, body=None, date=None, batch_id=None, faculty_id=None, classroom_id=None, **kw):
+        """Classes of one calendar date (weekday + validity), with holiday / weekly-off info per batch."""
+        _need_attendance()
+        env = request.env
+        day = fields.Date.to_date(date) if date else fields.Date.context_today(env['otm.timetable'])
+        domain = [('weekday', '=', str(day.weekday()))]
+        for k, v in (('batch_id', batch_id), ('faculty_id', faculty_id), ('classroom_id', classroom_id)):
+            if v:
+                domain.append((k, '=', int(v)))
+        slots = env['otm.timetable'].search(domain).filtered(
+            lambda s: (not s.valid_from or s.valid_from <= day) and (not s.valid_to or s.valid_to >= day))
+        Hol = env['st.attendance.holiday']
+        rows, off = [], {}
+        for s in slots:
+            reason = Hol._off_reason(s.batch_id, day)
+            if reason:
+                off[s.batch_id.name] = reason
+                continue
+            rows.append(s._api_dict())
+        return {'date': fields.Date.to_string(day), 'weekday': str(day.weekday()),
+                'slots': rows, 'off': [{'batch': k, 'reason': v} for k, v in off.items()]}
+
     @api('/timetable/save', methods=('POST',))
     def save(self, body=None):
-        _need_manager()
+        _need_edit()
         T = request.env['otm.timetable']
         vals = {
             'batch_id': int(body['batch_id']), 'subject_id': int(body['subject_id']),
@@ -63,7 +92,7 @@ class TimetableApi(http.Controller):
 
     @api('/timetable/<int:slot_id>/delete', methods=('POST',))
     def delete(self, slot_id, body=None, **kw):
-        _need_manager()
+        _need_edit()
         request.env['otm.timetable'].browse(slot_id).unlink()
         return {'ok': True}
 

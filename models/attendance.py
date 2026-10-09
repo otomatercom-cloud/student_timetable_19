@@ -43,3 +43,19 @@ class StudentAttendance(models.Model):
             })
             made += 1
         return made
+
+    @api.model
+    def _dashboard_timetable(self, day):
+        day = fields.Date.to_date(day)
+        Slot = self.env['otm.timetable']
+        slots = Slot.search([('weekday', '=', str(day.weekday())), ('active', '=', True)]).filtered(
+            lambda s: (not s.valid_from or s.valid_from <= day) and (not s.valid_to or s.valid_to >= day)
+            and not self.env['st.attendance.holiday']._off_reason(s.batch_id, day))
+        sheets = self.sudo().search([('date', '=', day), ('slot_no', 'in', slots.ids)])
+        state = {sh.slot_no: (sh.id, sh.state) for sh in sheets}
+        out = []
+        for s in slots.sorted(lambda x: (x.start_time, x.batch_id.name or '')):
+            d = s._api_dict()
+            d['sheet_id'], d['state'] = state.get(s.id, (False, 'pending'))
+            out.append(d)
+        return out
