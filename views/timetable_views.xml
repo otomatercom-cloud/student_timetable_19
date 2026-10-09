@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_otm_classroom_list" model="ir.ui.view">
+        <field name="name">otm.classroom.list</field>
+        <field name="model">otm.classroom</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="capacity"/>
+                <field name="branch"/>
+                <field name="note"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_otm_timetable_list" model="ir.ui.view">
+        <field name="name">otm.timetable.list</field>
+        <field name="model">otm.timetable</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="batch_id"/>
+                <field name="weekday"/>
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time" widget="float_time"/>
+                <field name="subject_id"/>
+                <field name="faculty_id"/>
+                <field name="classroom_id"/>
+                <field name="valid_from" optional="hide"/>
+                <field name="valid_to" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_otm_timetable_search" model="ir.ui.view">
+        <field name="name">otm.timetable.search</field>
+        <field name="model">otm.timetable</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="batch_id"/>
+                <field name="faculty_id"/>
+                <field name="classroom_id"/>
+                <field name="subject_id"/>
+                <group>
+                    <filter name="g_batch" string="Batch" context="{'group_by': 'batch_id'}"/>
+                    <filter name="g_faculty" string="Faculty" context="{'group_by': 'faculty_id'}"/>
+                    <filter name="g_room" string="Classroom" context="{'group_by': 'classroom_id'}"/>
+                    <filter name="g_day" string="Day" context="{'group_by': 'weekday'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_otm_timetable" model="ir.actions.act_window">
+        <field name="name">Timetable</field>
+        <field name="res_model">otm.timetable</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_otm_classroom" model="ir.actions.act_window">
+        <field name="name">Classrooms</field>
+        <field name="res_model">otm.classroom</field>
+        <field name="view_mode">list</field>
+    </record>
+    <menuitem id="menu_otm_timetable" name="Timetable" parent="student_details_19.menu_st_attendance"
+              action="action_otm_timetable" sequence="22"/>
+    <menuitem id="menu_otm_classroom" name="Classrooms" parent="student_details_19.menu_st_attendance"
+              action="action_otm_classroom" sequence="23"/>
+</odoo>
